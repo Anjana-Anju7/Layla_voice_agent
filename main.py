@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timezone, timedelta
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Header, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -15,6 +15,14 @@ app = FastAPI(title="Layla Voice Agent")
 
 GREETING_TRIGGERS = {"hi layla", "hey layla", "hello layla", "hi", "hello", "hey"}
 
+# Set LAYLA_API_KEY in your .env and Render environment variables
+_API_KEY = os.getenv("LAYLA_API_KEY", "")
+
+
+def _check_api_key(x_api_key: str = Header(default="")):
+    if _API_KEY and x_api_key != _API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -27,7 +35,8 @@ def health():
 
 
 @app.post("/api/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, x_api_key: str = Header(default="")):
+    _check_api_key(x_api_key)
     message = req.message.strip()
     user_id = req.user_id
 
@@ -39,8 +48,8 @@ async def chat(req: ChatRequest):
     # Main agent path
     try:
         reply, action = run_agent(user_id, message)
-    except Exception as e:
-        reply = f"Sorry, something went wrong: {str(e)}"
+    except Exception:
+        reply = "Sorry, something went wrong. Please try again."
         action = "continue"
 
     return JSONResponse({"reply": reply, "action": action})

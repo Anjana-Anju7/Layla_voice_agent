@@ -1,5 +1,6 @@
 import os
 import json
+from typing import Optional
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -9,13 +10,22 @@ SCOPES = [
     "https://www.googleapis.com/auth/calendar",
 ]
 
+# Module-level cache — loaded once per server process, refreshed when expired
+_cached_creds: Optional[Credentials] = None
+
 
 def get_credentials() -> Credentials:
     """
-    Load Google OAuth2 credentials.
+    Load Google OAuth2 credentials, cached in memory for the lifetime of the process.
     On Render: reads from GOOGLE_TOKEN_JSON and GOOGLE_CREDENTIALS_JSON env vars.
     Locally: reads from token.json and credentials.json files.
     """
+    global _cached_creds
+
+    # Return cached creds if still valid
+    if _cached_creds and _cached_creds.valid:
+        return _cached_creds
+
     creds = None
 
     # Try loading token from environment variable (Render deployment)
@@ -28,7 +38,7 @@ def get_credentials() -> Credentials:
     elif os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json", SCOPES)
 
-    # Refresh if expired
+    # Refresh if expired (happens once per process lifetime or after ~1hr token expiry)
     if creds and creds.expired and creds.refresh_token:
         creds.refresh(Request())
 
@@ -47,4 +57,5 @@ def get_credentials() -> Credentials:
             )
         creds = flow.run_local_server(port=0)
 
+    _cached_creds = creds
     return creds

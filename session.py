@@ -27,6 +27,7 @@ def get_or_create_session(user_id: str) -> dict:
         "last_active": now,
         "session_end": None,
         "prev_session_end": last_end,
+        "pending_action": None,
     }
     return _sessions[user_id]
 
@@ -46,6 +47,22 @@ def end_session(user_id: str):
     """Mark the session as ended (called on goodbye)."""
     if user_id in _sessions:
         _sessions[user_id]["session_end"] = time.time()
+
+
+def get_pending_action(user_id: str) -> Optional[dict]:
+    session = _sessions.get(user_id)
+    return session["pending_action"] if session else None
+
+
+def set_pending_action(user_id: str, tool: str, args: dict, summary: str):
+    session = get_or_create_session(user_id)
+    session["pending_action"] = {"tool": tool, "args": args, "summary": summary}
+
+
+def clear_pending_action(user_id: str):
+    session = _sessions.get(user_id)
+    if session:
+        session["pending_action"] = None
 
 
 def get_prev_session_end(user_id: str) -> Optional[float]:

@@ -2,6 +2,7 @@ services:
   - type: web
     name: layla-voice-agent
     env: python
+    pythonVersion: "3.11.0"
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
@@ -11,6 +12,8 @@ services:
       - key: GOOGLE_CREDENTIALS_JSON
         sync: false
       - key: GOOGLE_TOKEN_JSON
+        sync: false
+      - key: LAYLA_API_KEY
         sync: false
       - key: MEMORY_FILE_PATH
         value: /data/memory.json

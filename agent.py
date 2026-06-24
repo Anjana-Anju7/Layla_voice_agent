@@ -2,6 +2,7 @@ import os
 import json
 import google.generativeai as genai
 from google.generativeai.types import FunctionDeclaration, Tool
+import google.api_core.exceptions
 
 import session as session_mgr
 import memory
@@ -147,11 +148,42 @@ GEMINI_TOOLS = Tool(function_declarations=[
 # Main agent
 # ---------------------------------------------------------------------------
 _main_model = genai.GenerativeModel(
-    model_name="gemini-2.5-flash-lite-preview-06-17",
+    model_name="gemini-2.5-flash-lite",
     tools=[GEMINI_TOOLS],
 )
 
-_compact_model = genai.GenerativeModel(model_name="gemini-2.5-flash-lite-preview-06-17")
+_compact_model = genai.GenerativeModel(model_name="gemini-2.5-flash-lite")
+
+
+# Tools that change real data — require spoken confirmation before executing
+DESTRUCTIVE_TOOLS = {"send_email", "reply_email", "delete_event"}
+
+CONFIRM_WORDS = {"yes", "yeah", "yep", "go ahead", "do it", "send it", "send",
+                 "confirm", "ok", "okay", "sure", "please", "correct", "that's right"}
+CANCEL_WORDS = {"no", "nope", "cancel", "stop", "don't", "abort",
+                "never mind", "nevermind", "wait", "hold on"}
+
+
+def _is_confirmation(message: str) -> bool:
+    lowered = message.lower().strip().rstrip(".,!")
+    if any(w in lowered for w in CANCEL_WORDS):
+        return False
+    return any(w in lowered for w in CONFIRM_WORDS)
+
+
+def _is_cancellation(message: str) -> bool:
+    lowered = message.lower().strip().rstrip(".,!")
+    return any(w in lowered for w in CANCEL_WORDS)
+
+
+def _build_confirmation_prompt(tool: str, args: dict) -> str:
+    if tool == "send_email":
+        return f"I'll send an email to {args.get('to', 'that address')} with subject \"{args.get('subject', '')}\". Shall I go ahead?"
+    if tool == "reply_email":
+        return "I'll send that reply. Shall I go ahead?"
+    if tool == "delete_event":
+        return "I'll permanently delete that calendar event. Shall I go ahead?"
+    return "Shall I go ahead?"
 
 
 def _build_system_prompt(user_id: str) -> str:
@@ -173,6 +205,34 @@ def run_agent(user_id: str, message: str) -> tuple[str, str]:
     Run the Gemini agent for a given user message.
     Returns (reply_text, action) where action is "stop" or "continue".
     """
+    # Handle pending confirmation from previous turn
+    pending = session_mgr.get_pending_action(user_id)
+    if pending:
+        if _is_cancellation(message):
+            session_mgr.clear_pending_action(user_id)
+            reply = "No problem, I've cancelled that."
+            session_mgr.append_message(user_id, "user", message)
+            session_mgr.append_message(user_id, "assistant", reply)
+            return reply, "continue"
+
+        if _is_confirmation(message):
+            session_mgr.clear_pending_action(user_id)
+            session_mgr.append_message(user_id, "user", message)
+            try:
+                handler = TOOL_HANDLERS[pending["tool"]]
+                result = handler(pending["args"])
+                reply = f"Done. {result}"
+            except Exception as e:
+                reply = f"Sorry, that didn't work. {str(e)}"
+            session_mgr.append_message(user_id, "assistant", reply)
+            return reply, "continue"
+
+        # Ambiguous response — ask again
+        session_mgr.append_message(user_id, "user", message)
+        reply = f"Just to confirm — {pending['summary']} Shall I go ahead? Say yes or no."
+        session_mgr.append_message(user_id, "assistant", reply)
+        return reply, "continue"
+
     # Compact history if needed
     session_mgr.maybe_compact(user_id, _compact_model)
 
@@ -191,7 +251,13 @@ def run_agent(user_id: str, message: str) -> tuple[str, str]:
     # Agentic loop
     max_iterations = 10
     for _ in range(max_iterations):
-        response = _main_model.generate_content(contents)
+        try:
+            response = _main_model.generate_content(contents)
+        except google.api_core.exceptions.ResourceExhausted:
+            return "I'm a bit busy right now. Please try again in a moment.", "continue"
+        except google.api_core.exceptions.GoogleAPIError as e:
+            return "I ran into a problem reaching my brain. Please try again.", "continue"
+
         candidate = response.candidates[0]
         content = candidate.content
 
@@ -200,7 +266,12 @@ def run_agent(user_id: str, message: str) -> tuple[str, str]:
 
         if not function_calls:
             # Final text response
-            text = "".join(p.text for p in content.parts if hasattr(p, "text")).strip()
+            text = "".join(p.text for p in content.parts if hasattr(p, "text") and p.text).strip()
+            if not text:
+                try:
+                    text = response.text.strip()
+                except Exception:
+                    pass
             session_mgr.append_message(user_id, "assistant", text)
 
             action = "continue"
@@ -211,8 +282,18 @@ def run_agent(user_id: str, message: str) -> tuple[str, str]:
 
             return text, action
 
-        # Execute all function calls (parallel tool use)
-        contents.append({"role": "model", "parts": [p._pb for p in content.parts]})
+        # Check for destructive tools before executing — ask confirmation first
+        for part in function_calls:
+            fn_name = part.function_call.name
+            fn_args = dict(part.function_call.args) if part.function_call.args else {}
+            if fn_name in DESTRUCTIVE_TOOLS:
+                prompt = _build_confirmation_prompt(fn_name, fn_args)
+                session_mgr.set_pending_action(user_id, fn_name, fn_args, prompt)
+                session_mgr.append_message(user_id, "assistant", prompt)
+                return prompt, "continue"
+
+        # Execute all non-destructive tool calls
+        contents.append(content)
         tool_results = []
 
         for part in function_calls:
