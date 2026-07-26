@@ -43,7 +43,7 @@ async def chat(req: ChatRequest, x_api_key: str = Header(default="")):
     # Fast greeting path — bypass LLM entirely
     if message.lower().rstrip(".,!") in GREETING_TRIGGERS:
         reply = await _greeting_fast_path(user_id)
-        return JSONResponse({"reply": reply, "action": "continue"})
+        return JSONResponse({"reply": reply, "action": "continue", "should_stop": False})
 
     # Main agent path
     try:
@@ -52,7 +52,7 @@ async def chat(req: ChatRequest, x_api_key: str = Header(default="")):
         reply = "Sorry, something went wrong. Please try again."
         action = "continue"
 
-    return JSONResponse({"reply": reply, "action": action})
+    return JSONResponse({"reply": reply, "action": action, "should_stop": action == "stop"})
 
 
 async def _greeting_fast_path(user_id: str) -> str:
