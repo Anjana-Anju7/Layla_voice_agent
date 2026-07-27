@@ -10,7 +10,7 @@ logger = logging.getLogger("layla.agent")
 
 import session as session_mgr
 import memory
-from tools import gmail_tools, calendar_tools
+from tools import gmail_tools, calendar_tools, web_search_tools
 
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
@@ -34,6 +34,8 @@ TOOL_HANDLERS = {
     # Memory
     "add_memory": lambda args: memory.add_memory(**args),
     "forget_memory": lambda args: memory.forget_memory(**args),
+    # Web
+    "web_search": lambda args: web_search_tools.web_search(**args),
 }
 
 # ---------------------------------------------------------------------------
@@ -145,6 +147,14 @@ GEMINI_TOOLS = Tool(function_declarations=[
             "category": {"type": "string"},
             "key": {"type": "string"},
         }, "required": ["category", "key"]},
+    ),
+    FunctionDeclaration(
+        name="web_search",
+        description="Search the web for current information not in your training data — weather, "
+                     "news, sports scores, prices, current events, or any other real-time question.",
+        parameters={"type": "object", "properties": {
+            "query": {"type": "string", "description": "The search query"},
+        }, "required": ["query"]},
     ),
 ])
 
