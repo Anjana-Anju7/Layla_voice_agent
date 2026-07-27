@@ -1,4 +1,5 @@
 import os
+import logging
 from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, Request, Header, HTTPException
 from fastapi.responses import JSONResponse
@@ -10,6 +11,8 @@ load_dotenv()
 import session as session_mgr
 from agent import run_agent
 from tools import gmail_tools, calendar_tools
+
+logger = logging.getLogger("layla.main")
 
 app = FastAPI(title="Layla Voice Agent")
 
@@ -48,7 +51,8 @@ async def chat(req: ChatRequest, x_api_key: str = Header(default="")):
     # Main agent path
     try:
         reply, action = run_agent(user_id, message)
-    except Exception:
+    except Exception as e:
+        logger.error("run_agent failed (%s): %s", type(e).__name__, e)
         reply = "Sorry, something went wrong. Please try again."
         action = "continue"
 

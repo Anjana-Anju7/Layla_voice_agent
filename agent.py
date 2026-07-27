@@ -1,9 +1,12 @@
 import os
 import json
+import logging
 from datetime import datetime
 import google.generativeai as genai
 from google.generativeai.types import FunctionDeclaration, Tool
 import google.api_core.exceptions
+
+logger = logging.getLogger("layla.agent")
 
 import session as session_mgr
 import memory
@@ -254,9 +257,14 @@ def run_agent(user_id: str, message: str) -> tuple[str, str]:
     for _ in range(max_iterations):
         try:
             response = _main_model.generate_content(contents)
-        except google.api_core.exceptions.ResourceExhausted:
+        except google.api_core.exceptions.ResourceExhausted as e:
+            logger.error("Gemini ResourceExhausted (rate limit): %s", e)
             return "I'm a bit busy right now. Please try again in a moment.", "continue"
         except google.api_core.exceptions.GoogleAPIError as e:
+            logger.error("Gemini %s: %s", type(e).__name__, e)
+            return "I ran into a problem reaching my brain. Please try again.", "continue"
+        except Exception as e:
+            logger.error("Unexpected error calling Gemini (%s): %s", type(e).__name__, e)
             return "I ran into a problem reaching my brain. Please try again.", "continue"
 
         candidate = response.candidates[0]
@@ -311,6 +319,7 @@ def run_agent(user_id: str, message: str) -> tuple[str, str]:
                 else:
                     result = f"Unknown tool: {fn_name}"
             except Exception as e:
+                logger.error("Tool %s failed (%s): %s", fn_name, type(e).__name__, e)
                 result = f"Error running {fn_name}: {str(e)}"
 
             tool_results.append({
