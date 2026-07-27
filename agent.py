@@ -1,5 +1,6 @@
 import os
 import json
+from datetime import datetime
 import google.generativeai as genai
 from google.generativeai.types import FunctionDeclaration, Tool
 import google.api_core.exceptions
@@ -194,7 +195,7 @@ Keep responses short and natural for voice (1-3 sentences unless reading email c
 Never say "I cannot" if you have a tool for it — just use it.
 When the user says goodbye (e.g. "goodbye", "bye", "that's all", "stop"), end your reply with the exact string: [ACTION:STOP]
 
-Today's date/time context: use this to interpret relative dates like "tomorrow", "Friday", "next week".
+Today's date and time: {datetime.now().strftime("%A, %d %B %Y, %H:%M")}. Use this to interpret relative dates like "tomorrow", "Friday", "next week".
 
 {f"Long-term memory about this user:{chr(10)}{mem_block}" if mem_block else ""}
 """.strip()
@@ -271,7 +272,9 @@ def run_agent(user_id: str, message: str) -> tuple[str, str]:
                 try:
                     text = response.text.strip()
                 except Exception:
-                    pass
+                    text = "I processed that but had trouble forming a reply. Please try again."
+            if not text:
+                text = "I processed that but had trouble forming a reply. Please try again."
             session_mgr.append_message(user_id, "assistant", text)
 
             action = "continue"
