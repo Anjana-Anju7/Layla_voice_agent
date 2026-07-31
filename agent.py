@@ -208,7 +208,7 @@ Keep responses short and natural for voice (1-3 sentences unless reading email c
 Never say "I cannot" if you have a tool for it — just use it.
 When the user says goodbye (e.g. "goodbye", "bye", "that's all", "stop"), end your reply with the exact string: [ACTION:STOP]
 
-Today's date and time: {datetime.now().strftime("%A, %d %B %Y, %H:%M")}. Use this to interpret relative dates like "tomorrow", "Friday", "next week".
+Today's date and time: {datetime.now(calendar_tools.USER_TZ).strftime("%A, %d %B %Y, %H:%M")} ({calendar_tools.USER_TIMEZONE}). Use this to interpret relative dates like "tomorrow", "Friday", "next week". All event times you produce should be in this local timezone, not UTC.
 
 {f"Long-term memory about this user:{chr(10)}{mem_block}" if mem_block else ""}
 """.strip()

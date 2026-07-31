@@ -1,6 +1,11 @@
+import os
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from googleapiclient.discovery import build
 from auth import get_credentials
+
+USER_TIMEZONE = os.getenv("USER_TIMEZONE", "Europe/London")
+USER_TZ = ZoneInfo(USER_TIMEZONE)
 
 
 def _service():
@@ -23,7 +28,7 @@ def read_calendar(days_ahead: int = 1) -> str:
     days_ahead: how many days ahead to look (default 1 = today only)
     """
     svc = _service()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(USER_TZ)
     end = now + timedelta(days=days_ahead)
 
     result = svc.events().list(
@@ -88,8 +93,8 @@ def create_event(
     event_body = {
         "summary": title,
         "description": description,
-        "start": {"dateTime": start, "timeZone": "UTC"},
-        "end": {"dateTime": end, "timeZone": "UTC"},
+        "start": {"dateTime": start, "timeZone": USER_TIMEZONE},
+        "end": {"dateTime": end, "timeZone": USER_TIMEZONE},
     }
     event = svc.events().insert(calendarId=calendar_id, body=event_body).execute()
     return f"Event created: '{title}' on {start}. ID:{event['id']}"
@@ -126,11 +131,11 @@ def modify_event(
         old_end = datetime.fromisoformat(event["end"]["dateTime"].replace("Z", "+00:00"))
         duration = old_end - old_start
 
-        new_start_dt = _parse_datetime(new_start).replace(tzinfo=timezone.utc)
+        new_start_dt = _parse_datetime(new_start).replace(tzinfo=USER_TZ)
         event["start"]["dateTime"] = new_start_dt.isoformat()
 
         if new_end:
-            new_end_dt = _parse_datetime(new_end).replace(tzinfo=timezone.utc)
+            new_end_dt = _parse_datetime(new_end).replace(tzinfo=USER_TZ)
         else:
             new_end_dt = new_start_dt + duration  # preserve duration
 
