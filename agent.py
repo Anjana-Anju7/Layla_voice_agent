@@ -162,11 +162,11 @@ GEMINI_TOOLS = Tool(function_declarations=[
 # Main agent
 # ---------------------------------------------------------------------------
 _main_model = genai.GenerativeModel(
-    model_name="gemini-2.5-flash-lite",
+    model_name="gemini-3.5-flash-lite",
     tools=[GEMINI_TOOLS],
 )
 
-_compact_model = genai.GenerativeModel(model_name="gemini-2.5-flash-lite")
+_compact_model = genai.GenerativeModel(model_name="gemini-3.5-flash-lite")
 
 
 # Tools that change real data — require spoken confirmation before executing
