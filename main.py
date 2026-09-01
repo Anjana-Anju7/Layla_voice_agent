@@ -16,7 +16,7 @@ logger = logging.getLogger("layla.main")
 
 app = FastAPI(title="Layla Voice Agent")
 
-GREETING_TRIGGERS = {"hi layla", "hey layla", "hello layla", "hi", "hello", "hey"}
+GREETING_TRIGGERS = {"hi mike", "hey mike", "hello mike", "hi", "hello", "hey"}
 
 # Set LAYLA_API_KEY in your .env and Render environment variables
 _API_KEY = os.getenv("LAYLA_API_KEY", "")
@@ -90,7 +90,7 @@ async def _greeting_fast_path(user_id: str) -> str:
     except Exception:
         calendar_summary = ""
 
-    parts = ["Hi! I'm Layla, ready to help."]
+    parts = ["Hi! I'm Mike, ready to help."]
     if email_summary:
         parts.append(email_summary)
     if calendar_summary:

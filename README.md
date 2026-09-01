@@ -1,6 +1,6 @@
-# Layla — Voice AI Personal Assistant
+# Mike — Voice AI Personal Assistant
 
-Layla is a voice-driven AI assistant built for blind and visually impaired users. Say **"Hi Layla"** and have a natural spoken conversation — she reads your emails, manages your calendar, searches the web, and remembers things about you. No screen interaction required at any point.
+Mike is a voice-driven AI assistant built for blind and visually impaired users. Say **"Hi Mike"** and have a natural spoken conversation — he reads your emails, manages your calendar, searches the web, and remembers things about you. No screen interaction required at any point.
 
 
 ---
@@ -8,8 +8,8 @@ Layla is a voice-driven AI assistant built for blind and visually impaired users
 ## Demo
 
 ```
-"Hi Layla"              → She greets you and reports new emails and today's events
-"Read my latest emails" → She reads them aloud
+"Hi Mike"              → he greets you and reports new emails and today's events
+"Read my latest emails" → he reads them aloud
 "Reply to the first one saying I'll be there by Friday"
                         → "I'll send a reply to Sarah. Shall I go ahead?"
 "Yes"                   → Reply sent
@@ -66,7 +66,7 @@ Layla is a voice-driven AI assistant built for blind and visually impaired users
 iPhone (iOS Shortcut)              Server (Python / Render)
 ┌─────────────────────┐            ┌──────────────────────────────────┐
 │                     │   HTTPS    │  FastAPI  /api/chat               │
-│  "Hi Layla"         │ ────────>  │    │                              │
+│  "Hi Mike"         │ ────────>  │    │                              │
 │  (Vocal Shortcut)   │            │    ├── Greeting? → Fast path      │
 │                     │            │    │   (zero LLM, <1s)            │
 │  iOS Shortcut loop: │            │    │                              │
@@ -129,8 +129,8 @@ iPhone (iOS Shortcut)              Server (Python / Render)
 ### 1 — Clone and install
 
 ```bash
-git clone https://github.com/Anjana-Anju7/Layla_voice_agent.git
-cd Layla_voice_agent
+git clone https://github.com/Anjana-Anju7/Mike_voice_agent.git
+cd Mike_voice_agent
 pip install -r requirements.txt
 ```
 
@@ -181,7 +181,7 @@ Test:
 curl -X POST http://localhost:8000/api/chat \
   -H "Content-Type: application/json" \
   -H "x-api-key: your-secret-key-here" \
-  -d '{"message": "hi layla", "user_id": "your-name"}'
+  -d '{"message": "hi mike", "user_id": "your-name"}'
 ```
 
 ---
@@ -206,7 +206,7 @@ curl -X POST http://localhost:8000/api/chat \
 
 ## iOS Shortcut Setup
 
-Create a shortcut named **Layla** with these actions inside a **Repeat** loop:
+Create a shortcut named **Mike** with these actions inside a **Repeat** loop:
 
 | Step | Action | Setting |
 |---|---|---|
@@ -219,7 +219,7 @@ Create a shortcut named **Layla** with these actions inside a **Repeat** loop:
 | 7 | **Get Dictionary Value** | Key: `should_stop` from Contents of URL |
 | 8 | **If** value = `true` | Exit Shortcut |
 
-**Hands-free activation:** Settings → Accessibility → Vocal Shortcuts → Add → *"Hi Layla"*
+**Hands-free activation:** Settings → Accessibility → Vocal Shortcuts → Add → *"Hi Mike"*
 
 ---
 

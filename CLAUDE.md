@@ -18,7 +18,7 @@ uvicorn main:app --reload
 curl -X POST localhost:8000/api/chat \
   -H "Content-Type: application/json" \
   -H "x-api-key: your-secret-key-here" \
-  -d '{"message": "hi layla", "user_id": "test"}'
+  -d '{"message": "hi mike", "user_id": "test"}'
 
 # Health check
 curl localhost:8000/health
