@@ -38,8 +38,8 @@ Layla is a voice-driven AI assistant built for blind and visually impaired users
 - Modify events — reschedules preserve original duration automatically
 - Delete events with spoken confirmation before deleting
 - Supports multiple calendars
-- Timezone-aware — all times are read/written in a configurable local timezone (`USER_TIMEZONE`, default `Europe/London`), not UTC
-- Today's date and time is injected into every prompt so relative dates ("tomorrow", "next Friday") resolve correctly
+- Timezone-aware — all times are read/written in a configurable local timezone (`USER_TIMEZONE`, default `Europe/London`)
+
 
 ### Web Search
 - Real-time answers via DuckDuckGo search
@@ -55,7 +55,6 @@ Layla is a voice-driven AI assistant built for blind and visually impaired users
 ### Accessibility
 - Fully voice-driven — no screen interaction at any step
 - Speaks confirmation before any destructive action (send, delete)
-- Speaks *"On it"* immediately after you speak so you know Layla heard you
 - Clean spoken error messages — no raw API errors read aloud
 - Built specifically for blind and visually impaired users
 
