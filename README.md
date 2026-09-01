@@ -14,7 +14,7 @@ Layla is a voice-driven AI assistant built for blind and visually impaired users
                         → "I'll send a reply to Sarah. Shall I go ahead?"
 "Yes"                   → Reply sent
 "What's the weather in London?"
-                        → Real-time answer via Google Search
+                        → Real-time answer 
 "Add a team meeting tomorrow at 2pm"
                         → Event created in Google Calendar
 "Goodbye"               → Session ends
