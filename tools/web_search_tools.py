@@ -1,4 +1,7 @@
+import logging
 from duckduckgo_search import DDGS
+
+logger = logging.getLogger("layla.websearch")
 
 
 def web_search(query: str) -> str:
@@ -9,10 +12,13 @@ def web_search(query: str) -> str:
     try:
         with DDGS() as ddgs:
             results = list(ddgs.text(query, max_results=4))
+        logger.info("DDG search '%s': %d results", query, len(results))
     except Exception as e:
-        return f"Web search failed: {str(e)}"
+        logger.error("DDG search failed (%s): %s", type(e).__name__, e)
+        return f"Web search failed: {type(e).__name__}: {str(e)}"
 
     if not results:
+        logger.warning("DDG search '%s': no results returned", query)
         return "No results found for that search."
 
     formatted = []
