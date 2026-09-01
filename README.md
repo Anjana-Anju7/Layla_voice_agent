@@ -38,9 +38,11 @@ Layla is a voice-driven AI assistant built for blind and visually impaired users
 - Modify events — reschedules preserve original duration automatically
 - Delete events with spoken confirmation before deleting
 - Supports multiple calendars
+- Timezone-aware — all times are read/written in a configurable local timezone (`USER_TIMEZONE`, default `Europe/London`), not UTC
+- Today's date and time is injected into every prompt so relative dates ("tomorrow", "next Friday") resolve correctly
 
 ### Web Search
-- Real-time answers via Gemini with Google Search grounding
+- Real-time answers via DuckDuckGo search
 - Weather, news, directions, general knowledge
 
 ### Memory
@@ -70,7 +72,7 @@ iPhone (iOS Shortcut)              Server (Python / Render)
 │                     │            │    │   (zero LLM, <1s)            │
 │  iOS Shortcut loop: │            │    │                              │
 │  1. Dictate Text    │            │    └── Agent path →               │
-│  2. Speak "On it"   │            │        Gemini 2.5 Flash Lite      │
+│  2. Speak "On it"   │            │        Gemini 3.5 Flash Lite      │
 │  3. POST to server  │ <────────  │          ├── Gmail tools (6)      │
 │  4. Speak reply     │   JSON     │          ├── Calendar tools (5)   │
 │  5. Repeat          │            │          ├── Web Search            │
@@ -84,8 +86,8 @@ iPhone (iOS Shortcut)              Server (Python / Render)
 
 | Layer | Technology |
 |---|---|
-| LLM | Gemini 2.5 Flash Lite |
-| Web Search | Gemini 2.5 Flash + Google Search grounding |
+| LLM | Gemini 3.5 Flash Lite |
+| Web Search | DuckDuckGo (ddgs) |
 | Backend | FastAPI + Uvicorn |
 | Email | Gmail API |
 | Calendar | Google Calendar API |
@@ -106,8 +108,9 @@ iPhone (iOS Shortcut)              Server (Python / Render)
 ├── auth.py               # Google OAuth2 — credential loading and caching
 ├── generate_token.py     # One-time OAuth token generator
 ├── tools/
-│   ├── gmail_tools.py    # read, search, send, reply, archive, get_full_email
-│   └── calendar_tools.py # read, create, modify, delete, list_calendars
+│   ├── gmail_tools.py       # read, search, send, reply, archive, get_full_email
+│   ├── calendar_tools.py    # read, create, modify, delete, list_calendars (timezone-aware)
+│   └── web_search_tools.py  # DuckDuckGo web search (ddgs)
 ├── render.yaml           # Render deployment config with persistent disk
 ├── requirements.txt
 └── .env.example          # Environment variable template
@@ -164,6 +167,7 @@ GOOGLE_CREDENTIALS_JSON=<full contents of credentials.json>
 GOOGLE_TOKEN_JSON=<full contents of token.json>
 LAYLA_API_KEY=your-secret-key-here
 MEMORY_FILE_PATH=memory.json
+USER_TIMEZONE=Europe/London
 ```
 
 ### 5 — Run locally
@@ -213,8 +217,8 @@ Create a shortcut named **Layla** with these actions inside a **Repeat** loop:
 | 4 | **Get Contents of URL** | POST · Headers: `Content-Type: application/json`, `x-api-key: your-secret-key` · Body: JSON `message` = Dictated Text, `user_id` = your name |
 | 5 | **Get Dictionary Value** | Key: `reply` from Contents of URL |
 | 6 | **Speak Text** | Dictionary Value · Wait until finished: ON |
-| 7 | **Get Dictionary Value** | Key: `action` from Contents of URL |
-| 8 | **If** value = `stop` | Exit Shortcut |
+| 7 | **Get Dictionary Value** | Key: `should_stop` from Contents of URL |
+| 8 | **If** value = `true` | Exit Shortcut |
 
 **Hands-free activation:** Settings → Accessibility → Vocal Shortcuts → Add → *"Hi Layla"*
 
@@ -229,6 +233,7 @@ Create a shortcut named **Layla** with these actions inside a **Repeat** loop:
 | `GOOGLE_TOKEN_JSON` | Yes | Full JSON from `token.json` after running `generate_token.py` |
 | `LAYLA_API_KEY` | Yes | Secret key to protect the `/api/chat` endpoint |
 | `MEMORY_FILE_PATH` | No | Path for memory file. Default: `memory.json`. On Render: `/data/memory.json` |
+| `USER_TIMEZONE` | No | IANA timezone for interpreting relative dates and calendar events. Default: `Europe/London` |
 
 ---
 
