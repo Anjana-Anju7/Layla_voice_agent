@@ -147,8 +147,11 @@ def send_email(to: str, subject: str, body: str) -> str:
     body: plain text email body
     """
     svc = _service()
+    profile = svc.users().getProfile(userId="me").execute()
+    sender = profile.get("emailAddress", "me")
     msg = MIMEText(body)
     msg["to"] = to
+    msg["from"] = sender
     msg["subject"] = subject
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
     svc.users().messages().send(userId="me", body={"raw": raw}).execute()

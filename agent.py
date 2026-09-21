@@ -202,6 +202,8 @@ def _build_confirmation_prompt(tool: str, args: dict) -> str:
 
 def _build_system_prompt(user_id: str) -> str:
     mem_block = memory.build_memory_prompt()
+    user_email = os.getenv("USER_EMAIL", "")
+    email_line = f"The user's own email address is {user_email}. Use this when they say 'email myself' or 'send to me'." if user_email else ""
     return f"""You are Mike, a voice AI personal assistant. You are helpful, concise, and action-oriented.
 You DO things — you send real emails, create real calendar events, search the web — not just tell the user how to do them.
 Keep responses short and natural for voice (1-3 sentences unless reading email content).
@@ -209,7 +211,7 @@ Never say "I cannot" if you have a tool for it — just use it.
 When the user says goodbye (e.g. "goodbye", "bye", "that's all", "stop"), end your reply with the exact string: [ACTION:STOP]
 
 Today's date and time: {datetime.now(calendar_tools.USER_TZ).strftime("%A, %d %B %Y, %H:%M")} ({calendar_tools.USER_TIMEZONE}). Use this to interpret relative dates like "tomorrow", "Friday", "next week". All event times you produce should be in this local timezone, not UTC.
-
+{f"{chr(10)}{email_line}" if email_line else ""}
 {f"Long-term memory about this user:{chr(10)}{mem_block}" if mem_block else ""}
 """.strip()
 
