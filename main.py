@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import session as session_mgr
 from agent import run_agent
 from tools import gmail_tools, calendar_tools
 
@@ -45,6 +46,8 @@ async def chat(req: ChatRequest, x_api_key: str = Header(default="")):
     # Fast greeting path — bypass LLM entirely
     if message.lower().rstrip(".,!") in GREETING_TRIGGERS:
         reply = await _greeting_fast_path(user_id)
+        session_mgr.append_message(user_id, "user", message)
+        session_mgr.append_message(user_id, "assistant", reply)
         return JSONResponse({"reply": reply, "action": "continue", "should_stop": None})
 
     # Main agent path
@@ -64,11 +67,10 @@ async def _greeting_fast_path(user_id: str) -> str:
     Reports the actual unread count in the Primary inbox.
     """
     try:
-        count_str = gmail_tools.count_unread_primary()
-        count = int(count_str.rstrip("+"))
+        count = gmail_tools.count_unread_primary()
         if count == 0:
             return "Hi! I'm Mike. No new emails right now. What would you like to do?"
         plural = "s" if count != 1 else ""
-        return f"Hi! I'm Mike. You have {count_str} new email{plural}. Want me to read them?"
+        return f"Hi! I'm Mike. You have {count} new email{plural}. Want me to read them?"
     except Exception:
         return "Hi! I'm Mike, ready to help. What would you like to do?"

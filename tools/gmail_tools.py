@@ -64,24 +64,26 @@ def read_emails(max_results: int = 5) -> str:
 
         lines.append(f"{i}. ID:{email_id} | From: {sender} | Subject: {subject}\n   {snippet[:100]}")
 
+    svc.users().messages().batchModify(
+        userId="me",
+        body={"ids": [msg["id"] for msg in messages], "removeLabelIds": ["UNREAD"]},
+    ).execute()
+
     return "\n\n".join(lines)
 
 
-def count_unread_primary(max_results: int = 50) -> str:
+def count_unread_primary() -> int:
     """
-    Count unread emails in the Primary inbox. Returns the count as a string,
-    with a '+' suffix if there may be more than max_results unread.
+    Count unread emails in the Primary inbox.
     """
     svc = _service()
     result = svc.users().messages().list(
         userId="me",
-        maxResults=max_results,
+        maxResults=1,
         labelIds=["INBOX", "UNREAD"],
         q="category:primary",
     ).execute()
-    count = len(result.get("messages", []))
-    suffix = "+" if result.get("nextPageToken") else ""
-    return f"{count}{suffix}"
+    return result.get("resultSizeEstimate", 0)
 
 
 def search_emails(query: str, max_results: int = 5) -> str:
@@ -131,6 +133,7 @@ def get_full_email(email_id: str) -> str:
     """
     svc = _service()
     msg = svc.users().messages().get(userId="me", id=email_id, format="full").execute()
+    svc.users().messages().modify(userId="me", id=email_id, body={"removeLabelIds": ["UNREAD"]}).execute()
 
     def extract_body(payload):
         if payload.get("body", {}).get("data"):
