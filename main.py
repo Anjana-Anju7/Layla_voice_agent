@@ -66,17 +66,47 @@ GREETING_MAX_COUNT = 10
 
 async def _greeting_fast_path(user_id: str) -> str:
     """
-    Build a greeting without calling the LLM.
-    Reports the unread count in the Primary inbox, capped at GREETING_MAX_COUNT
-    so the spoken number stays digestible (e.g. "10+" instead of "247").
+    Build a greeting without calling the LLM: reports the unread email count
+    (capped at GREETING_MAX_COUNT so the spoken number stays digestible, e.g.
+    "10+" instead of "247") and today's event count.
     """
+    email_count = None
+    event_count = None
+
     try:
-        count = gmail_tools.count_unread_primary()
-        if count == 0:
-            return "Hi! I'm Mike. No new emails right now. What would you like to do?"
-        display = min(count, GREETING_MAX_COUNT)
-        suffix = "+" if count > GREETING_MAX_COUNT else ""
-        plural = "s" if display != 1 else ""
-        return f"Hi! I'm Mike. You have {display}{suffix} new email{plural}. Want me to read them?"
+        email_count = gmail_tools.count_unread_primary()
     except Exception:
+        pass
+
+    try:
+        event_count = calendar_tools.count_today_events()
+    except Exception:
+        pass
+
+    if email_count is None and event_count is None:
         return "Hi! I'm Mike, ready to help. What would you like to do?"
+
+    parts = []
+    has_something = False
+
+    if email_count is not None:
+        if email_count == 0:
+            parts.append("no new emails")
+        else:
+            display = min(email_count, GREETING_MAX_COUNT)
+            suffix = "+" if email_count > GREETING_MAX_COUNT else ""
+            plural = "s" if display != 1 else ""
+            parts.append(f"{display}{suffix} new email{plural}")
+            has_something = True
+
+    if event_count is not None:
+        if event_count == 0:
+            parts.append("nothing on your calendar today")
+        else:
+            plural = "s" if event_count != 1 else ""
+            parts.append(f"{event_count} event{plural} today")
+            has_something = True
+
+    summary = " and ".join(parts)
+    question = "Want me to go through them?" if has_something else "What would you like to do?"
+    return f"Hi! I'm Mike. You have {summary}. {question}"

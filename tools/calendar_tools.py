@@ -63,6 +63,26 @@ def read_calendar(days_ahead: int = 1) -> str:
     return "\n".join(lines)
 
 
+def count_today_events() -> int:
+    """
+    Count events on the primary calendar for today (midnight to midnight,
+    in the user's local timezone).
+    """
+    svc = _service()
+    start_of_day = datetime.now(USER_TZ).replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_day = start_of_day + timedelta(days=1)
+
+    result = svc.events().list(
+        calendarId="primary",
+        timeMin=start_of_day.isoformat(),
+        timeMax=end_of_day.isoformat(),
+        singleEvents=True,
+        maxResults=50,
+    ).execute()
+
+    return len(result.get("items", []))
+
+
 def list_calendars() -> str:
     """List all available calendars for the user."""
     svc = _service()
