@@ -71,30 +71,9 @@ async def _greeting_fast_path(user_id: str) -> str:
     calendar_summary = ""
 
     try:
-        # New emails since last session (or last 24h if first session)
-        since_label = "since your last session" if prev_end else "in the last 24 hours"
         emails_text = gmail_tools.read_emails(max_results=5)
         email_lines = [l for l in emails_text.split("\n\n") if l.strip()]
         email_count = len(email_lines)
-        email_summary = f"You have {email_count} recent email{'s' if email_count != 1 else ''}."
+        return f"Hi! I'm Mike. You have {email_count} new email{'s' if email_count != 1 else ''}. Want me to read them?"
     except Exception:
-        email_summary = ""
-
-    try:
-        events_text = calendar_tools.read_calendar(days_ahead=1)
-        if "No events" in events_text:
-            calendar_summary = "Nothing on your calendar today."
-        else:
-            event_count = len([l for l in events_text.split("\n") if l.strip().startswith("-")])
-            calendar_summary = f"You have {event_count} event{'s' if event_count != 1 else ''} today."
-    except Exception:
-        calendar_summary = ""
-
-    parts = ["Hi! I'm Mike, ready to help."]
-    if email_summary:
-        parts.append(email_summary)
-    if calendar_summary:
-        parts.append(calendar_summary)
-    parts.append("What would you like to do?")
-
-    return " ".join(parts)
+        return "Hi! I'm Mike, ready to help. What would you like to do?"
