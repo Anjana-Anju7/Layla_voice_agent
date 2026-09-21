@@ -54,6 +54,23 @@ def learn_contact(email: str, name: str):
         _save(data)
 
 
+def friendly_name(email: str) -> str:
+    """
+    Return a spoken-friendly form of an email address: 'yourself' for the
+    user's own address (USER_EMAIL), a known contact's name if learned,
+    otherwise the raw address unchanged. Accepts either a bare address or
+    a 'Name <address>' header value.
+    """
+    addr = email.split("<")[1].rstrip(">").strip() if "<" in email and ">" in email else email.strip()
+
+    user_email = os.getenv("USER_EMAIL", "")
+    if user_email and addr.lower() == user_email.strip().lower():
+        return "yourself"
+
+    data = _load()
+    return data.get("contacts", {}).get(addr, addr)
+
+
 def build_memory_prompt() -> str:
     """Format all memories as a system prompt block."""
     data = _load()

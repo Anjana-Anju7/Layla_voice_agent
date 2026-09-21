@@ -67,6 +67,23 @@ def read_emails(max_results: int = 5) -> str:
     return "\n\n".join(lines)
 
 
+def count_unread_primary(max_results: int = 50) -> str:
+    """
+    Count unread emails in the Primary inbox. Returns the count as a string,
+    with a '+' suffix if there may be more than max_results unread.
+    """
+    svc = _service()
+    result = svc.users().messages().list(
+        userId="me",
+        maxResults=max_results,
+        labelIds=["INBOX", "UNREAD"],
+        q="category:primary",
+    ).execute()
+    count = len(result.get("messages", []))
+    suffix = "+" if result.get("nextPageToken") else ""
+    return f"{count}{suffix}"
+
+
 def search_emails(query: str, max_results: int = 5) -> str:
     """
     Search emails using Gmail search syntax.
@@ -155,7 +172,7 @@ def send_email(to: str, subject: str, body: str) -> str:
     msg["subject"] = subject
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
     svc.users().messages().send(userId="me", body={"raw": raw}).execute()
-    return f"Email sent to {to} with subject '{subject}'."
+    return f"Email sent to {memory.friendly_name(to)} with subject '{subject}'."
 
 
 def reply_email(email_id: str, body: str) -> str:
@@ -186,7 +203,7 @@ def reply_email(email_id: str, body: str) -> str:
     svc.users().messages().send(
         userId="me", body={"raw": raw, "threadId": thread_id}
     ).execute()
-    return f"Reply sent to {to}."
+    return f"Reply sent to {memory.friendly_name(to)}."
 
 
 def archive_email(email_id: str) -> str:

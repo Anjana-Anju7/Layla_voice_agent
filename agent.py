@@ -192,7 +192,8 @@ def _is_cancellation(message: str) -> bool:
 
 def _build_confirmation_prompt(tool: str, args: dict) -> str:
     if tool == "send_email":
-        return f"I'll send an email to {args.get('to', 'that address')} with subject \"{args.get('subject', '')}\". Shall I go ahead?"
+        recipient = memory.friendly_name(args.get("to", "")) or "that address"
+        return f"I'll send an email to {recipient} with subject \"{args.get('subject', '')}\". Shall I go ahead?"
     if tool == "reply_email":
         return "I'll send that reply. Shall I go ahead?"
     if tool == "delete_event":

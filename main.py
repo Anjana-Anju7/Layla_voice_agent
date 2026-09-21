@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import session as session_mgr
 from agent import run_agent
 from tools import gmail_tools, calendar_tools
 
@@ -62,18 +61,14 @@ async def chat(req: ChatRequest, x_api_key: str = Header(default="")):
 async def _greeting_fast_path(user_id: str) -> str:
     """
     Build a greeting without calling the LLM.
-    Fetches new email count and today's event count directly from APIs.
+    Reports the actual unread count in the Primary inbox.
     """
-    prev_end = session_mgr.get_prev_session_end(user_id)
-
-    # Fetch email and calendar data in parallel via separate API calls
-    email_summary = ""
-    calendar_summary = ""
-
     try:
-        emails_text = gmail_tools.read_emails(max_results=5)
-        email_lines = [l for l in emails_text.split("\n\n") if l.strip()]
-        email_count = len(email_lines)
-        return f"Hi! I'm Mike. You have {email_count} new email{'s' if email_count != 1 else ''}. Want me to read them?"
+        count_str = gmail_tools.count_unread_primary()
+        count = int(count_str.rstrip("+"))
+        if count == 0:
+            return "Hi! I'm Mike. No new emails right now. What would you like to do?"
+        plural = "s" if count != 1 else ""
+        return f"Hi! I'm Mike. You have {count_str} new email{plural}. Want me to read them?"
     except Exception:
         return "Hi! I'm Mike, ready to help. What would you like to do?"
