@@ -61,16 +61,22 @@ async def chat(req: ChatRequest, x_api_key: str = Header(default="")):
     return JSONResponse({"reply": reply, "action": action, "should_stop": True if action == "stop" else None})
 
 
+GREETING_MAX_COUNT = 10
+
+
 async def _greeting_fast_path(user_id: str) -> str:
     """
     Build a greeting without calling the LLM.
-    Reports the actual unread count in the Primary inbox.
+    Reports the unread count in the Primary inbox, capped at GREETING_MAX_COUNT
+    so the spoken number stays digestible (e.g. "10+" instead of "247").
     """
     try:
         count = gmail_tools.count_unread_primary()
         if count == 0:
             return "Hi! I'm Mike. No new emails right now. What would you like to do?"
-        plural = "s" if count != 1 else ""
-        return f"Hi! I'm Mike. You have {count} new email{plural}. Want me to read them?"
+        display = min(count, GREETING_MAX_COUNT)
+        suffix = "+" if count > GREETING_MAX_COUNT else ""
+        plural = "s" if display != 1 else ""
+        return f"Hi! I'm Mike. You have {display}{suffix} new email{plural}. Want me to read them?"
     except Exception:
         return "Hi! I'm Mike, ready to help. What would you like to do?"
